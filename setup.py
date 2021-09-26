@@ -1,16 +1,20 @@
+import os
 from setuptools import find_packages, setup
 
 requires = [
-    'psycopg2>=2.9.1',
-    'pgcopy>=1.5.0'
+    'psycopg2',
+    'pgcopy'
 ]
 
-with open('README.md', 'r', 'utf-8') as readme_file:
+dirname = os.path.dirname(__file__)
+readme_path = os.path.join(dirname, 'README.md')
+
+with open(readme_path, 'r') as readme_file:
     readme = readme_file.read()
 
 setup(
     name='db_facade',
-    version='0.0.1-alpha',
+    version='0.0.4-alpha',
     description='A simple library that provides an easy to use interface for databases.',
     long_description=readme,
     long_description_content_type='text/markdown',

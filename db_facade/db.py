@@ -1,16 +1,87 @@
 import logging
 import time
 
-from  .db_clients import postgresql
+import psycopg2
+from pgcopy import CopyManager
+
+
+# from .db_clients import postgresql
+print(locals())
+
+
+class Postgresql_Client():
+
+    @staticmethod
+    def get_connection(db_url):
+        connection = psycopg2.connect(db_url)
+        return connection
+
+    @staticmethod
+    def execute_query(db_connection, query, data):
+        cursor = db_connection.cursor()
+        cursor.execute(query, data)
+        db_connection.commit()
+        cursor.close()
+
+    @staticmethod
+    def insert_rows(db_connection, table_name, rows):
+        """
+        Insert multiple rows of data.
+        Args:
+            db_connection: postgresql connection object
+            table_name (str): Name of the table
+            data (list(dict))
+        """
+        cursor = db_connection.cursor()
+
+        first_row = rows[0]
+        column_names = list(first_row)
+
+        values = list(map(lambda row: tuple(row.values()), rows))
+
+        try:
+            copyManager = CopyManager(db_connection, table_name, column_names)
+            copyManager.copy(values)
+            db_connection.commit()
+            cursor.close()
+
+        except (Exception, psycopg2.Error) as error:
+            cursor.close()
+            raise error
+
+    @staticmethod
+    def fetch_many(db_connection, table_name, limit=None):
+
+        query = None
+
+        if (limit):
+            query = f'SELECT * FROM {table_name} LIMIT {limit}'
+        else:
+            query = f'SELECT * FROM {table_name}'
+
+        cursor = db_connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cursor.execute(query)
+        result = cursor.fetchmany(limit)
+        cursor.close()
+
+        return result
+
+    @staticmethod
+    def is_connection_open(db_connection):
+        if db_connection.closed == 0:
+            return True
+
+        return False
+
 
 
 class DB():
 
-    _connectors = {"postgresql": postgresql.get_connection}
-    _inserters = {"postgresql": postgresql.insert_rows}
-    _fetchers = {"postgresql": postgresql.fetch_many}
-    _executers = {"postgresql": postgresql.execute_query}
-    _connection_status_providers = {"postgresql": postgresql.is_connection_open}
+    _connectors = {"postgresql": Postgresql_Client.get_connection}
+    _inserters = {"postgresql": Postgresql_Client.insert_rows}
+    _fetchers = {"postgresql": Postgresql_Client.fetch_many}
+    _executers = {"postgresql": Postgresql_Client.execute_query}
+    _connection_status_providers = {"postgresql": Postgresql_Client.is_connection_open}
 
     def __init__(self, url, db="postgresql"):
         self.db = db
