@@ -72,6 +72,10 @@ class Postgresql_Client():
             return True
 
         return False
+    
+    @staticmethod
+    def close_connection(db_connection):
+        db_connection.close()
 
 
 
@@ -82,6 +86,7 @@ class DB():
     _fetchers = {"postgresql": Postgresql_Client.fetch_many}
     _executers = {"postgresql": Postgresql_Client.execute_query}
     _connection_status_providers = {"postgresql": Postgresql_Client.is_connection_open}
+    _connection_closers = {"postgresql": Postgresql_Client.close_connection}
 
     def __init__(self, url, db="postgresql"):
         self.db = db
@@ -100,15 +105,17 @@ class DB():
             logging.error(
                 f'DB - {self.db} - Insert many failed with error:{e}'
             )
+            raise e
 
     def fetch_many(self, table_name, limit=None):
         try:
             fetcher = self._fetchers[self.db]
-            fetcher(self.connection, table_name, limit)
+            return fetcher(self.connection, table_name, limit)
         except Exception as e:
             logging.error(
                 f'DB - {self.db} - Fetch many failed with error:{e}'
             )
+            raise e
 
     def execute_query(self, query, data=None):
         try:
@@ -118,6 +125,7 @@ class DB():
             logging.error(
                 f'DB - {self.db} - Execute query failed with error:{e}'
             )
+            raise e
 
     def is_connection_open(self):
         connection_status_provider = self._connection_status_providers[self.db]
@@ -157,3 +165,13 @@ class DB():
 
         logging.error(f'DB - {self.db} - Reached retry limit')
         raise Exception('Reached retry limit')
+
+    def close_connection(self):
+        try:
+            connection_closer = self._connection_closers[self.db]
+            connection_closer()
+        except:
+            logging.error(
+                f'DB - {self.db} - Failed to close the connection with error:{e}'
+            )
+            raise e

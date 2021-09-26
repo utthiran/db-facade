@@ -14,7 +14,7 @@ with open(readme_path, 'r') as readme_file:
 
 setup(
     name='db_facade',
-    version='0.0.4-alpha',
+    version='0.0.5-alpha',
     description='A simple library that provides an easy to use interface for databases.',
     long_description=readme,
     long_description_content_type='text/markdown',
